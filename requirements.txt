@@ -1,10 +1,28 @@
-streamlit>=1.28.0
-supabase>=2.0.0
-plotly>=5.17.0
-pandas>=2.0.0
-numpy>=1.24.0
-streamlit-option-menu>=0.3.6
-python-dotenv>=1.0.0
-openpyxl>=3.1.0
-flask>=2.3.0
-requests>=2.31.0
+# FastAPI y servidor
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Análisis de datos
+pandas==2.2.2
+numpy==1.26.4
+openpyxl==3.1.5
+
+# Visualizaciones
+plotly==5.23.0
+
+# Templates
+jinja2==3.1.4
+
+# Utilidades
+python-multipart==0.0.9
+aiofiles==24.1.0
+
+# Logging y monitoreo (opcional)
+structlog==24.4.0
+
+# Base de datos (SDK oficial 2.x)
+supabase==2.7.4
+
+# Herramientas de build (evita issues de distutils/setuptools)
+setuptools>=70.0.0
+wheel>=0.43.0

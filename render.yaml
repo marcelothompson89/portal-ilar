@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: portal-ilar
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: ENVIRONMENT
+        value: production
+    disk:
+      name: portal-ilar-disk
+      mountPath: /opt/render/project/data
+      sizeGB: 1

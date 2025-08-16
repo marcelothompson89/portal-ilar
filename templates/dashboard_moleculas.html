@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Moléculas ILAR</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .filters {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        select, input {
+            padding: 0.75rem;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            font-size: 1.1rem;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>
+            <i class="fas fa-flask"></i>
+            Dashboard de Moléculas ILAR
+        </h1>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Filtros -->
+        <div class="filters">
+            <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">
+                <i class="fas fa-filter"></i> Filtros de Búsqueda
+            </h2>
+            
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="moleculeSelect">Seleccionar Molécula:</label>
+                    <select id="moleculeSelect">
+                        <option value="all">Todas las moléculas</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="countrySelect">Seleccionar Países:</label>
+                    <select id="countrySelect" multiple style="height: 120px;">
+                    </select>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="btn" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Aplicar Filtros
+                </button>
+                <button class="btn" onclick="clearFilters()" style="margin-left: 1rem; background: #95a5a6;">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="stats" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecords">-</div>
+                <div class="stat-label">Total Registros</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="uniqueCountries">-</div>
+                <div class="stat-label">Países Únicos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="uniqueMolecules">-</div>
+                <div class="stat-label">Moléculas Únicas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dateRange">-</div>
+                <div class="stat-label">Rango de Años</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" style="margin-top: 1rem;">
+            <button class="tab-btn active" data-tab="tab-datos">📋 Datos</button>
+            <button class="tab-btn" data-tab="tab-analisis">📊 Análisis por País</button>
+        </div>
+        
+        <!-- Contenido de pestañas -->
+        <div id="tab-datos" class="tab-content" style="display:block; margin-top:1rem;">
+            <h2 style="color:#2c3e50; margin-bottom:1rem;">Datos filtrados</h2>
+        
+            <!-- Selector de columnas -->
+            <div class="filter-group" style="margin-bottom:1rem;">
+            <label for="columnSelect" style="font-weight:600; color:#2c3e50;">Selecciona columnas a mostrar:</label>
+            <select id="columnSelect" multiple style="height:140px; width:100%; border:2px solid #e0e6ed; border-radius:8px;"></select>
+            <div style="margin-top:.5rem;">
+                <button class="btn" onclick="applyColumnSelection()">Aplicar columnas</button>
+                <button class="btn" onclick="resetColumnSelection()" style="margin-left:.5rem; background:#95a5a6;">Restablecer</button>
+            </div>
+            </div>
+        
+            <!-- Tabla -->
+            <div id="dataTableContainer"></div>
+        </div>
+        
+        <div id="tab-analisis" class="tab-content" style="display:none; margin-top:1rem;">
+            <div class="charts-grid">
+            <div class="chart-container"><div id="chart-bar" class="loading"><div class="spinner"></div>Cargando gráfico...</div></div>
+            <div class="chart-container"><div id="chart-pie" class="loading"><div class="spinner"></div>Cargando gráfico...</div></div>
+            </div>
+        </div>
+  
+    </div>
+
+    <script>
+        // Variables globales
+        let currentFilters = {
+            molecule: 'all',
+            countries: []
+        };
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+        });
+
+        async function loadInitialData() {
+            try {
+                // Cargar estadísticas iniciales y opciones de filtro
+                const response = await fetch('/api/moleculas/stats');
+                const data = await response.json();
+                
+                // Poblar selectores
+                populateSelectors(data);
+                
+                // Cargar estadísticas
+                updateStats(data);
+                
+                // Cargar gráficos iniciales
+                loadCharts();
+                
+            } catch (error) {
+                console.error('Error cargando datos iniciales:', error);
+                showError('Error cargando los datos. Por favor, recarga la página.');
+            }
+        }
+
+        function populateSelectors(data) {
+            // Poblar selector de moléculas
+            const moleculeSelect = document.getElementById('moleculeSelect');
+            moleculeSelect.innerHTML = '<option value="all">Todas las moléculas</option>';
+            
+            data.available_molecules.forEach(molecule => {
+                const option = document.createElement('option');
+                option.value = molecule;
+                option.textContent = molecule;
+                moleculeSelect.appendChild(option);
+            });
+
+            // Poblar selector de países
+            const countrySelect = document.getElementById('countrySelect');
+            countrySelect.innerHTML = '';
+            
+            data.available_countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                countrySelect.appendChild(option);
+            });
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalRecords').textContent = data.total_records?.toLocaleString() || '-';
+            document.getElementById('uniqueCountries').textContent = data.unique_countries || '-';
+            document.getElementById('uniqueMolecules').textContent = data.unique_molecules || '-';
+            
+            const dateRange = data.date_range;
+            if (dateRange && dateRange.min_year && dateRange.max_year) {
+                document.getElementById('dateRange').textContent = `${dateRange.min_year} - ${dateRange.max_year}`;
+            } else {
+                document.getElementById('dateRange').textContent = 'N/A';
+            }
+        }
+
+        async function loadCharts() {
+            try {
+                // Construir parámetros de la URL
+                const params = new URLSearchParams();
+                
+                if (currentFilters.molecule !== 'all') {
+                    params.append('molecule', currentFilters.molecule);
+                }
+                
+                currentFilters.countries.forEach(country => {
+                    params.append('countries', country);
+                });
+
+                // Llamar a la API de gráficos
+                const response = await fetch(`/api/moleculas/charts?${params}`);
+                const charts = await response.json();
+
+                // Renderizar cada gráfico
+                if (charts.molecules_by_country) {
+                    Plotly.newPlot('chart1', charts.molecules_by_country.data, charts.molecules_by_country.layout, {responsive: true});
+                }
+
+                if (charts.rx_otc_distribution) {
+                    Plotly.newPlot('chart2', charts.rx_otc_distribution.data, charts.rx_otc_distribution.layout, {responsive: true});
+                }
+
+                if (charts.switches_timeline) {
+                    Plotly.newPlot('chart3', charts.switches_timeline.data, charts.switches_timeline.layout, {responsive: true});
+                }
+
+                if (charts.top_molecules) {
+                    Plotly.newPlot('chart4', charts.top_molecules.data, charts.top_molecules.layout, {responsive: true});
+                }
+
+            } catch (error) {
+                console.error('Error cargando gráficos:', error);
+                showError('Error cargando los gráficos.');
+            }
+        }
+
+        async function applyFilters() {
+            // Obtener valores de los filtros
+            const moleculeSelect = document.getElementById('moleculeSelect');
+            const countrySelect = document.getElementById('countrySelect');
+            
+            currentFilters.molecule = moleculeSelect.value;
+            currentFilters.countries = Array.from(countrySelect.selectedOptions).map(option => option.value);
+
+            // Mostrar indicador de carga
+            showLoadingCharts();
+
+            try {
+                // Recargar estadísticas con filtros
+                const params = new URLSearchParams();
+                if (currentFilters.molecule !== 'all') {
+                    params.append('molecule', currentFilters.molecule);
+                }
+                currentFilters.countries.forEach(country => {
+                    params.append('countries', country);
+                });
+
+                const statsResponse = await fetch(`/api/moleculas/stats?${params}`);
+                const statsData = await statsResponse.json();
+                updateStats(statsData);
+
+                // Recargar gráficos
+                await loadCharts();
+
+            } catch (error) {
+                console.error('Error aplicando filtros:', error);
+                showError('Error aplicando los filtros.');
+            }
+        }
+
+        function clearFilters() {
+            // Limpiar selectores
+            document.getElementById('moleculeSelect').value = 'all';
+            document.getElementById('countrySelect').selectedIndex = -1;
+            
+            // Resetear filtros
+            currentFilters = {
+                molecule: 'all',
+                countries: []
+            };
+
+            // Recargar datos
+            loadInitialData();
+        }
+
+        function showLoadingCharts() {
+            const chartIds = ['chart1', 'chart2', 'chart3', 'chart4'];
+            chartIds.forEach(id => {
+                document.getElementById(id).innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando gráfico...
+                    </div>
+                `;
+            });
+        }
+
+        function showError(message) {
+            // Crear notificación de error
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #e74c3c;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                ${message}
+                <button onclick="this.parentElement.remove()" style="
+                    background: none;
+                    border: none;
+                    color: white;
+                    margin-left: 1rem;
+                    cursor: pointer;
+                    font-size: 1.2rem;
+                ">×</button>
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            // Auto-remove después de 5 segundos
+            setTimeout(() => {
+                if (errorDiv.parentElement) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Agregar estilos para la animación
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Hacer los gráficos responsivos al cambio de tamaño de ventana
+        window.addEventListener('resize', function() {
+            const chartIds = ['chart1', 'chart2', 'chart3', 'chart4'];
+            chartIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element && element.data) {
+                    Plotly.Plots.resize(id);
+                }
+            });
+        });
+    </script>
+
+    <!-- Modal para ver datos detallados -->
+    <div id="dataModal" style="
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        backdrop-filter: blur(5px);
+    ">
+        <div style="
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: #2c3e50; margin: 0;">
+                    <i class="fas fa-table"></i> Datos Detallados
+                </h2>
+                <button onclick="closeDataModal()" style="
+                    background: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                ">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+            
+            <div id="dataTableContainer">
+                <!-- Tabla se cargará aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón flotante para ver datos -->
+    <div style="
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+    ">
+        <button onclick="showDataModal()" class="btn" style="
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        ">
+            <i class="fas fa-table"></i>
+        </button>
+    </div>
+
+    <script>
+        // Función para mostrar modal con datos
+        async function showDataModal() {
+            document.getElementById('dataModal').style.display = 'block';
+            
+            try {
+                // Construir parámetros
+                const params = new URLSearchParams();
+                
+                if (currentFilters.molecule !== 'all') {
+                    params.append('molecule', currentFilters.molecule);
+                }
+                
+                currentFilters.countries.forEach(country => {
+                    params.append('countries', country);
+                });
+
+                // Obtener datos
+                const response = await fetch(`/api/moleculas/data?${params}&limit=200`);
+                const result = await response.json();
+                
+                // Crear tabla
+                createDataTable(result.data);
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                document.getElementById('dataTableContainer').innerHTML = `
+                    <div style="text-align: center; color: #e74c3c; padding: 2rem;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error cargando los datos
+                    </div>
+                `;
+            }
+        }
+
+        function closeDataModal() {
+            document.getElementById('dataModal').style.display = 'none';
+        }
+
+        function createDataTable(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('dataTableContainer').innerHTML = `
+                    <div style="text-align: center; color: #7f8c8d; padding: 2rem;">
+                        <i class="fas fa-info-circle"></i>
+                        No hay datos para mostrar con los filtros actuales
+                    </div>
+                `;
+                return;
+            }
+
+            // Obtener columnas (keys del primer objeto)
+            const columns = Object.keys(data[0]);
+            
+            // Columnas principales a mostrar primero
+            const priorityColumns = ['Molecule', 'Country', 'Switch Year', 'RX-OTC - Molecule', 'Strength'];
+            const otherColumns = columns.filter(col => !priorityColumns.includes(col));
+            const orderedColumns = [...priorityColumns.filter(col => columns.includes(col)), ...otherColumns];
+
+            let tableHTML = `
+                <div style="overflow-x: auto;">
+                    <table style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 0.9rem;
+                    ">
+                        <thead>
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #667eea;">
+            `;
+
+            // Headers
+            orderedColumns.forEach(col => {
+                tableHTML += `
+                    <th style="
+                        padding: 1rem 0.5rem;
+                        text-align: left;
+                        font-weight: 600;
+                        color: #2c3e50;
+                        border-right: 1px solid #e0e6ed;
+                        min-width: 120px;
+                    ">${col}</th>
+                `;
+            });
+
+            tableHTML += `
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Filas de datos
+            data.forEach((row, index) => {
+                const bgColor = index % 2 === 0 ? '#fff' : '#f8f9fa';
+                tableHTML += `<tr style="background: ${bgColor}; border-bottom: 1px solid #e0e6ed;">`;
+                
+                orderedColumns.forEach(col => {
+                    let value = row[col];
+                    
+                    // Formatear valores especiales
+                    if (value === null || value === undefined) {
+                        value = '-';
+                    } else if (typeof value === 'number' && col === 'Switch Year') {
+                        value = value.toString();
+                    }
+                    
+                    tableHTML += `
+                        <td style="
+                            padding: 0.75rem 0.5rem;
+                            border-right: 1px solid #e0e6ed;
+                            vertical-align: top;
+                        ">${value}</td>
+                    `;
+                });
+                
+                tableHTML += '</tr>';
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="
+                    margin-top: 1rem;
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    color: #7f8c8d;
+                ">
+                    <i class="fas fa-info-circle"></i>
+                    Mostrando ${data.length} registros. Usa los filtros para refinar la búsqueda.
+                </div>
+            `;
+
+            document.getElementById('dataTableContainer').innerHTML = tableHTML;
+        }
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('dataModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDataModal();
+            }
+        });
+
+        // Cerrar modal con tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDataModal();
+            }
+        });
+    </script>
+    <script>
+        // ------------------------------
+        // Estado global
+        // ------------------------------
+        currentFilters = { molecule: 'all', countries: [] };
+        let currentData = [];          // dataset filtrado (para tabla)
+        let allColumns = [];           // todas las columnas disponibles
+        let defaultColumns = ['Molecule','Switch Year','Country','RX-OTC - Product','Strength','NFC1'];
+        let selectedColumns = [];      // columnas elegidas por usuario
+      
+        // ------------------------------
+        // Tabs UI
+        // ------------------------------
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-tab')).style.display = 'block';
+          });
+        });
+      
+        // ------------------------------
+        // Inicialización (cargar datos iniciales)
+        // ------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+          // Reutilizamos tu carga inicial si ya la tenías; de lo contrario:
+          initPage();
+        });
+      
+        async function initPage() {
+          await loadInitialData();  // si ya existe en tu archivo, se mantiene
+          await refreshDataAndCharts(); // carga tabla + gráficos por primera vez
+        }
+      
+        // ------------------------------
+        // Refrescar datos (tabla + gráficos)
+        // ------------------------------
+        async function refreshDataAndCharts() {
+          await loadTableData();   // llena currentData y columnas
+          renderColumnSelector();  // llena el multiselect de columnas
+          renderTable();           // dibuja tabla
+      
+          await loadAnalysisCharts(); // dibuja barra y pie
+        }
+      
+        // ------------------------------
+        // Carga de datos para tabla
+        // ------------------------------
+        async function loadTableData() {
+          const params = new URLSearchParams();
+          if (currentFilters.molecule !== 'all') params.append('molecule', currentFilters.molecule);
+          currentFilters.countries.forEach(c => params.append('countries', c));
+      
+          // Traemos hasta 1000 registros como en tu modal
+          const resp = await fetch(`/api/moleculas/data?${params}&limit=1000`);
+          const json = await resp.json();
+          currentData = json.data || [];
+      
+          // Descubrir columnas
+          if (currentData.length) {
+            allColumns = Object.keys(currentData[0]);
+          } else {
+            allColumns = [];
+          }
+      
+          // Si no hay selección previa, usamos las columnas por defecto existentes en el dataset
+          if (!selectedColumns.length) {
+            selectedColumns = defaultColumns.filter(c => allColumns.includes(c));
+            if (!selectedColumns.length) selectedColumns = allColumns.slice(0, 8); // fallback
+          }
+        }
+      
+        // ------------------------------
+        // Selector de columnas (multiselect)
+        // ------------------------------
+        function renderColumnSelector() {
+          const select = document.getElementById('columnSelect');
+          select.innerHTML = '';
+          allColumns.forEach(col => {
+            const opt = document.createElement('option');
+            opt.value = col;
+            opt.textContent = col;
+            if (selectedColumns.includes(col)) opt.selected = true;
+            select.appendChild(opt);
+          });
+        }
+      
+        function applyColumnSelection() {
+          const select = document.getElementById('columnSelect');
+          selectedColumns = Array.from(select.selectedOptions).map(o => o.value);
+          renderTable();
+        }
+      
+        function resetColumnSelection() {
+          selectedColumns = defaultColumns.filter(c => allColumns.includes(c));
+          renderColumnSelector();
+          renderTable();
+        }
+      
+        // ------------------------------
+        // Render de tabla
+        // ------------------------------
+        function renderTable() {
+          const container = document.getElementById('dataTableContainer');
+          if (!currentData.length) {
+            container.innerHTML = `
+              <div style="text-align:center; color:#7f8c8d; padding:2rem;">
+                <i class="fas fa-info-circle"></i> No hay datos para mostrar con los filtros actuales
+              </div>`;
+            return;
+          }
+          if (!selectedColumns.length) {
+            container.innerHTML = `
+              <div style="text-align:center; color:#e67e22; padding:1rem;">
+                <i class="fas fa-exclamation-triangle"></i> Selecciona al menos una columna.
+              </div>`;
+            return;
+          }
+      
+          // Construir tabla simple
+          let html = `
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:.92rem;">
+                <thead>
+                  <tr style="background:#f8f9fa; border-bottom:2px solid #667eea;">
+                    ${selectedColumns.map(c => `<th style="padding:.75rem; text-align:left; color:#2c3e50; border-right:1px solid #e0e6ed; min-width:140px;">${c}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${currentData.map((row, i) => {
+                    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+                    return `<tr style="background:${bg}; border-bottom:1px solid #e0e6ed;">
+                      ${selectedColumns.map(c => `<td style="padding:.6rem; border-right:1px solid #e0e6ed; vertical-align:top;">${fmt(row[c])}</td>`).join('')}
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:.75rem; padding:.75rem; background:#f8f9fa; border-radius:8px; color:#7f8c8d;">
+              <i class="fas fa-info-circle"></i> Mostrando ${currentData.length} registros.
+            </div>
+          `;
+          container.innerHTML = html;
+      
+          function fmt(v) {
+            if (v === null || v === undefined) return '-';
+            return (typeof v === 'number') ? v : String(v);
+          }
+        }
+      
+        // ------------------------------
+        // Gráficos (barras y pie) como en Streamlit
+        // ------------------------------
+        async function loadAnalysisCharts() {
+          try {
+            const params = new URLSearchParams();
+            if (currentFilters.molecule !== 'all') params.append('molecule', currentFilters.molecule);
+            currentFilters.countries.forEach(c => params.append('countries', c));
+      
+            const response = await fetch(`/api/moleculas/charts?${params}`);
+            const charts = await response.json();
+      
+            // Barras: moléculas por país
+            if (charts.molecules_by_country) {
+              Plotly.newPlot('chart-bar', charts.molecules_by_country.data, charts.molecules_by_country.layout, {responsive:true});
+            } else {
+              document.getElementById('chart-bar').innerHTML = '<div style="text-align:center; color:#7f8c8d; padding:2rem;">Sin datos para el gráfico de barras</div>';
+            }
+      
+            // Pie: distribución RX vs OTC
+            if (charts.rx_otc_distribution) {
+              Plotly.newPlot('chart-pie', charts.rx_otc_distribution.data, charts.rx_otc_distribution.layout, {responsive:true});
+            } else {
+              document.getElementById('chart-pie').innerHTML = '<div style="text-align:center; color:#7f8c8d; padding:2rem;">Sin datos para el gráfico de torta</div>';
+            }
+      
+          } catch (e) {
+            console.error(e);
+            document.getElementById('chart-bar').innerHTML = '<div style="text-align:center; color:#e74c3c; padding:2rem;">Error cargando gráfico</div>';
+            document.getElementById('chart-pie').innerHTML = '<div style="text-align:center; color:#e74c3c; padding:2rem;">Error cargando gráfico</div>';
+          }
+        }
+      
+        // ------------------------------
+        // Integración con tus filtros existentes
+        // (reutiliza applyFilters si ya lo tenías)
+        // ------------------------------
+        async function applyFilters() {
+          const moleculeSelect = document.getElementById('moleculeSelect');
+          const countrySelect  = document.getElementById('countrySelect');
+      
+          currentFilters.molecule  = moleculeSelect.value;
+          currentFilters.countries = Array.from(countrySelect.selectedOptions).map(o => o.value);
+      
+          showLoadingCharts();  // si ya la tenías, mantiene UX
+          await updateStatsWithFilters();
+          await refreshDataAndCharts();
+        }
+      
+        async function updateStatsWithFilters() {
+          const params = new URLSearchParams();
+          if (currentFilters.molecule !== 'all') params.append('molecule', currentFilters.molecule);
+          currentFilters.countries.forEach(c => params.append('countries', c));
+      
+          const statsResponse = await fetch(`/api/moleculas/stats?${params}`);
+          const statsData = await statsResponse.json();
+          // Reutiliza tu updateStats(data)
+          updateStats(statsData);
+        }
+      </script>
+      
+      <style>
+        /* Estilos mínimos para tabs */
+        .tabs { display:flex; gap:.5rem; }
+        .tab-btn {
+          border:none; padding:.6rem .9rem; border-radius:8px; cursor:pointer;
+          background:#ecf0f1; color:#2c3e50; font-weight:600;
+        }
+        .tab-btn.active { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; }
+      </style>      
+</body>
+</html>
