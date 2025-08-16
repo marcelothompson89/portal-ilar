@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal ILAR - Dashboard</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <i class="fas fa-dna"></i>
+                    <span>Portal ILAR</span>
+                </div>
+            </div>
+            
+            <div class="user-section">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Usuario</span>
+                    <span class="user-email" id="userEmail">usuario@ejemplo.com</span>
+                </div>
+                <div class="user-avatar" id="userAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Welcome Section -->
+        <section class="welcome-section animate__animated animate__fadeInDown">
+            <div class="welcome-content">
+                <h1>¡Bienvenido al Portal ILAR! <span class="wave">👋</span></h1>
+                <p>Accede a los dashboards más completos sobre regulación farmacéutica y suplementos en América Latina</p>
+                <div class="last-login">
+                    <i class="fas fa-clock"></i>
+                    <span>Última conexión: <span id="lastLogin">Hoy</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Stats -->
+        <section class="stats-section animate__animated animate__fadeInUp">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon molecules">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>1,247</h3>
+                        <p>Moléculas OTC</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon countries">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>16</h3>
+                        <p>Países LATAM</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon ingredients">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>156</h3>
+                        <p>Ingredientes</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon regulations">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>12</h3>
+                        <p>Categorías Reg.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboards Grid -->
+        <section class="dashboards-section">
+            <h2>📊 Dashboards Disponibles</h2>
+            
+            <div class="dashboards-grid">
+                <!-- Dashboard Moléculas -->
+                <div class="dashboard-card molecules-card animate__animated animate__fadeInLeft">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="card-badge">Actualizado</div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <h3>Dashboard de Moléculas ILAR</h3>
+                        <p>Análisis completo de moléculas OTC y su regulación por país</p>
+                        
+                        <div class="card-features">
+                            <div class="feature">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Análisis de Switch por año</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-map"></i>
+                                <span>Comparación por países</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-database"></i>
+                                <span>Base de datos completa</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-filter"></i>
+                                <span>Filtros avanzados</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button class="btn-dashboard molecules-btn" onclick="openDashboard('moleculas')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Abrir Dashboard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Suplementos -->
+                <div class="dashboard-card supplements-card animate__animated animate__fadeInRight">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-capsules"></i>
+                        </div>
+                        <div class="card-badge">Actualizado</div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <h3>Dashboard Suplementos LATAM</h3>
+                        <p>Regulación de suplementos alimentarios en América Latina</p>
+                        
+                        <div class="card-features">
+                            <div class="feature">
+                                <i class="fas fa-gavel"></i>
+                                <span>Marco regulatorio por país</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-atom"></i>
+                                <span>Análisis por ingrediente</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>Comparación normativa</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Estadísticas regionales</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button class="btn-dashboard supplements-btn" onclick="openDashboard('suplementos')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Abrir Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Updates -->
+        <section class="updates-section animate__animated animate__fadeInUp">
+            <h2>📰 Actualizaciones Recientes</h2>
+            
+            <div class="updates-grid">
+                <div class="update-item">
+                    <div class="update-date">15 AGO</div>
+                    <div class="update-content">
+                        <h4>Actualización Q2 2025</h4>
+                        <p>Base de datos de moléculas actualizada con nuevos datos de switch</p>
+                    </div>
+                    <div class="update-type molecules">Moléculas</div>
+                </div>
+
+                <div class="update-item">
+                    <div class="update-date">10 AGO</div>
+                    <div class="update-content">
+                        <h4>Nuevas regulaciones Chile</h4>
+                        <p>Actualizadas las normativas de suplementos alimentarios</p>
+                    </div>
+                    <div class="update-type supplements">Suplementos</div>
+                </div>
+
+                <div class="update-item">
+                    <div class="update-date">05 AGO</div>
+                    <div class="update-content">
+                        <h4>Dashboard mejorado</h4>
+                        <p>Nueva funcionalidad de comparación regulatoria implementada</p>
+                    </div>
+                    <div class="update-type system">Sistema</div>
+                </div>
+
+                <div class="update-item">
+                    <div class="update-date">01 AGO</div>
+                    <div class="update-content">
+                        <h4>Datos de Colombia</h4>
+                        <p>Integración completa de información regulatoria colombiana</p>
+                    </div>
+                    <div class="update-type supplements">Suplementos</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <p>&copy; 2025 ILAR - Asociación Latinoamericana de Autocuidado Responsable</p>
+            </div>
+            <div class="footer-right">
+                <p>Desarrollado con ❤️ para la comunidad regulatoria de LATAM</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Cargando dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="static/config.js"></script>
+    <script src="static/dashboard.js"></script>
+</body>
+</html>
