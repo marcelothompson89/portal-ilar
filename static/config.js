@@ -2,13 +2,17 @@
 // CONFIGURACIÓN CENTRAL DEL PORTAL ILAR
 // ==============================================
 
-// ⚠️ IMPORTANTE: Reemplaza estas credenciales con las tuyas reales
+// PRIMERO: Detectar entorno
+const isProduction = window.location.hostname !== 'localhost' && 
+                    window.location.hostname !== '127.0.0.1';
+
+// SEGUNDO: Configuración base
 const CONFIG = {
-    // Credenciales de Supabase
+    // Credenciales de Supabase - REEMPLAZA CON TUS CREDENCIALES REALES
     SUPABASE_URL: 'https://gbrufkofxwdnanmhlgms.supabase.co',
-    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdicnVma29meHdkbmFubWhsZ21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTMwMjcsImV4cCI6MjA3MDkyOTAyN30.jb1bzrRTVKawj8kos-XRk-ZAUS7lsJL1JSFjFQKQuFk",
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdicnVma29meHdkbmFubWhsZ21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTMwMjcsImV4cCI6MjA3MDkyOTAyN30.jb1bzrRTVKawj8kos-XRk-ZAUS7lsJL1JSFjFQKQuFk',
     
-    // URLs ofuscadas que no revelan que son dashboards
+    // URLs de los dashboards que se ajustan según el entorno
     DASHBOARD_URLS: isProduction ? {
         moleculas: window.location.origin + '/analytics/molecular-data',
         suplementos: window.location.origin + '/analytics/supplement-regulations'
@@ -17,21 +21,12 @@ const CONFIG = {
         suplementos: 'http://localhost:8503'
     },
     
-    // Configuración de la aplicación
+    // Información de la aplicación
     APP: {
         name: 'Portal ILAR',
         version: '1.0.0',
         author: 'ILAR',
         description: 'Asociación Latinoamericana de Autocuidado Responsable'
-    },
-    
-    // URLs de producción (cambiar cuando deploys)
-    PRODUCTION: {
-        WEB_URL: 'https://portal.infoilar.org',
-        DASHBOARD_URLS: {
-            moleculas: 'https://portal.infoilar.org/moleculas',
-            suplementos: 'https://portal.infoilar.org/suplementos'
-        }
     },
     
     // Configuración de UI
@@ -42,22 +37,17 @@ const CONFIG = {
     }
 };
 
-// Detectar si estamos en producción o desarrollo
-const isProduction = window.location.hostname !== 'localhost' && 
-                    window.location.hostname !== '127.0.0.1';
-
-// Usar URLs apropiadas según el entorno
-const SUPABASE_URL = CONFIG.SUPABASE_URL;
-const SUPABASE_ANON_KEY = CONFIG.SUPABASE_ANON_KEY;
-const DASHBOARD_URLS = isProduction ? CONFIG.PRODUCTION.DASHBOARD_URLS : CONFIG.DASHBOARD_URLS;
-
-// Exportar configuración para otros archivos
+// TERCERO: Exportar configuración global
 window.ILAR_CONFIG = {
     SUPABASE_URL: CONFIG.SUPABASE_URL,
     SUPABASE_ANON_KEY: CONFIG.SUPABASE_ANON_KEY,
     DASHBOARD_URLS: CONFIG.DASHBOARD_URLS,
-    isProduction
+    APP: CONFIG.APP,
+    UI: CONFIG.UI,
+    isProduction: isProduction
 };
 
+// Debug info
 console.log('🧬 Portal ILAR inicializado');
 console.log('Entorno:', isProduction ? 'Producción' : 'Desarrollo');
+console.log('URLs Dashboard:', CONFIG.DASHBOARD_URLS);
