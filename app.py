@@ -122,31 +122,31 @@ def block_direct():
     return "Acceso directo no permitido", 403
 
 def start_streamlit_dashboards():
-    """Iniciar dashboards de Streamlit SOLO en localhost"""
+    """Iniciar dashboards con configuración CORS corregida"""
     logger.info("Iniciando dashboards de Streamlit...")
     
     try:
-        # Dashboard de moléculas (solo localhost)
+        # Dashboard moléculas con CORS habilitado
         subprocess.Popen([
             'python', '-m', 'streamlit', 'run', 'dashboard_moleculas.py',
             '--server.port', '8502',
-            '--server.address', '127.0.0.1',  # Solo localhost
+            '--server.address', '127.0.0.1',
             '--server.headless', 'true',
             '--browser.gatherUsageStats', 'false',
-            '--server.enableCORS', 'false'
+            '--server.enableXsrfProtection', 'false'  # Deshabilitar XSRF
         ])
         
-        # Dashboard de suplementos (solo localhost)
+        # Dashboard suplementos con CORS habilitado
         subprocess.Popen([
             'python', '-m', 'streamlit', 'run', 'dashboard_suplementos.py',
             '--server.port', '8503',
-            '--server.address', '127.0.0.1',  # Solo localhost
+            '--server.address', '127.0.0.1',
             '--server.headless', 'true',
             '--browser.gatherUsageStats', 'false',
-            '--server.enableCORS', 'false'
+            '--server.enableXsrfProtection', 'false'  # Deshabilitar XSRF
         ])
         
-        logger.info("Dashboards iniciados en localhost únicamente")
+        logger.info("Dashboards iniciados")
         
     except Exception as e:
         logger.error(f"Error iniciando dashboards: {e}")
