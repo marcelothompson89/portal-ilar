@@ -138,7 +138,7 @@ def start_streamlit_dashboards():
         
         # Dashboard suplementos con CORS habilitado
         subprocess.Popen([
-            'python', '-m', 'streamlit', 'run', 'dashboard_suplementos.py',
+            'python', '-m', 'streamlit', 'run', 'dashboard_suplementos_test.py',
             '--server.port', '8503',
             '--server.address', '127.0.0.1',
             '--server.headless', 'true',
