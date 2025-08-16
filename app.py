@@ -47,7 +47,9 @@ def proxy_suplementos(subpath=''):
     return proxy_streamlit(STREAMLIT_SUPLEMENTOS, subpath)
 
 def proxy_streamlit(target_url, subpath=''):
-    """Función helper para hacer proxy a Streamlit"""
+    """Función para hacer proxy a Streamlit"""
+    resp = None  # Inicializar la variable
+    
     try:
         # Construir URL completa
         if subpath:
@@ -55,32 +57,64 @@ def proxy_streamlit(target_url, subpath=''):
         else:
             url = target_url
         
-        # Obtener parámetros de query
+        # Agregar query parameters
         if request.query_string:
             url += f"?{request.query_string.decode()}"
         
-        # Hacer request al Streamlit interno
-        if request.method == 'GET':
-            resp = requests.get(url, stream=True)
+        # Headers para el proxy
+        headers = {}
+        for key, value in request.headers:
+            if key.lower() not in ['host', 'content-length']:
+                headers[key] = value
+        
+        # Hacer request a Streamlit según el método
+        if request.method == 'HEAD':
+            resp = requests.head(url, headers=headers, timeout=30)
+            return Response('', status=resp.status_code, headers=dict(resp.headers))
+        elif request.method == 'GET':
+            resp = requests.get(url, headers=headers, stream=True, timeout=30)
         elif request.method == 'POST':
             resp = requests.post(url, 
                                data=request.get_data(),
-                               headers=dict(request.headers))
+                               headers=headers,
+                               stream=True,
+                               timeout=30)
+        else:
+            resp = requests.request(request.method, url, 
+                                  data=request.get_data(),
+                                  headers=headers,
+                                  stream=True,
+                                  timeout=30)
         
-        # Crear respuesta proxy
+        # Modificar headers de respuesta
+        response_headers = dict(resp.headers)
+        response_headers.pop('content-encoding', None)
+        response_headers.pop('content-length', None)
+        
+        # Crear respuesta streaming
         def generate():
-            for chunk in resp.iter_content(chunk_size=1024):
-                yield chunk
+            for chunk in resp.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
         
         return Response(
             generate(),
             status=resp.status_code,
-            headers=dict(resp.headers)
+            headers=response_headers
         )
         
+    except requests.exceptions.ConnectionError:
+        logger.error(f"No se pudo conectar a {target_url}")
+        return render_error_page("Dashboard no disponible", 
+                                "El dashboard aún se está iniciando. Intenta en unos segundos.")
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout conectando a {target_url}")
+        return render_error_page("Timeout", 
+                                "El dashboard tardó demasiado en responder.")
     except Exception as e:
         logger.error(f"Error en proxy: {e}")
-        return f"Error cargando dashboard: {e}", 500
+        return render_error_page("Error interno", 
+                                f"Error: {str(e)}")
 
 # Bloquear acceso directo a puertos de Streamlit
 @app.route('/block-direct-access')
