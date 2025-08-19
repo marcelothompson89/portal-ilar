@@ -1,0 +1,128 @@
+{
+    "regulatory_data": {
+      "Argentina": {
+        "country_code": "AR",
+        "last_updated": "2023-12-01",
+        "sections": {
+          "instrumento_legal": {
+            "title": "Instrumento Legal",
+            "content": "1. [Código Alimentario Argentino](https://www.argentina.gob.ar/anmat/codigoalimentario) (CAA).\n2. Resolución Conjunta [3/2020](https://www.boletinoficial.gob.ar/detalleAviso/primera/239287/20201229)...",
+            "type": "legal_framework",
+            "links": [
+              {
+                "text": "Código Alimentario Argentino",
+                "url": "https://www.argentina.gob.ar/anmat/codigoalimentario"
+              },
+              {
+                "text": "Resolución Conjunta 3/2020",
+                "url": "https://www.boletinoficial.gob.ar/detalleAviso/primera/239287/20201229"
+              }
+            ]
+          },
+          "definicion_legal": {
+            "title": "Definición Legal",
+            "content": "**Suplementos dietarios**: productos destinados a incrementar la ingesta dietaria habitual...",
+            "type": "definition",
+            "summary": "Productos para incrementar ingesta dietaria habitual en personas sanas"
+          },
+          "categoria_regulatoria": {
+            "title": "Categoría Regulatoria",
+            "content": "Alimento",
+            "type": "category",
+            "value": "Alimento"
+          },
+          "proceso_autorizacion": {
+            "title": "Proceso de Autorización",
+            "content": "Los suplementos dietario se encuentran descritos bajo legislación de alimentos...",
+            "type": "process"
+          },
+          "proceso_registro": {
+            "title": "Proceso de Registro",
+            "content": "Registro",
+            "type": "registration_type",
+            "value": "Registro"
+          },
+          "tiempo_aprobacion": {
+            "title": "Tiempo de Aprobación",
+            "content": "**Tiempos según legislación vigente:** 20 días hábiles\n**Tiempos promedio reportados por la industria:** 90 - 120 días hábiles",
+            "type": "timeline",
+            "legal_time": "20 días hábiles",
+            "industry_time": "90-120 días hábiles"
+          },
+          "tasas": {
+            "title": "Tasas",
+            "content": "Para 2023, las tasas arancelarias ante el INAL son:\n- **Inscripción en el Registro Nacional de Establecimientos (RNE)** como importador/exportador: **54.450 AR$**\n- **Inscripción en el Registro Nacional de Suplementos Dietarios**: **37.450.450 AR$**",
+            "type": "fees",
+            "currency": "ARS",
+            "fees": [
+              {
+                "type": "RNE",
+                "amount": 54450,
+                "description": "Inscripción RNE importador/exportador"
+              },
+              {
+                "type": "Registro",
+                "amount": 37450450,
+                "description": "Inscripción Registro Nacional Suplementos Dietarios"
+              }
+            ]
+          },
+          "etiquetado_general": {
+            "title": "Etiquetado General",
+            "content": "Los suplementos dietarios se rotularán con la denominación de venta...",
+            "type": "labeling"
+          },
+          "frases_advertencia": {
+            "title": "Frases de Advertencia",
+            "content": "**Frases obligatorias:**\n- 'No utilizar en caso de embarazo...",
+            "type": "warnings",
+            "mandatory_phrases": [
+              "No utilizar en caso de embarazo, mujeres en período de lactancia ni en niños",
+              "Mantener fuera del alcance de los niños",
+              "Consumir este producto de acuerdo a las recomendaciones de ingesta diaria establecidas en el rótulo"
+            ]
+          },
+          "propiedades_salud": {
+            "title": "Declaraciones de Propiedades de Salud",
+            "content": "Las declaraciones de propiedades saludables **NO están permitidas**...",
+            "type": "health_claims",
+            "permitted": false,
+            "summary": "No permitidas según Disposición 8095/2023"
+          },
+          "propiedades_nutricionales": {
+            "title": "Declaraciones de Propiedades Nutricionales",
+            "content": "Las declaraciones de propiedades nutricionales **están permitidas**...",
+            "type": "nutrition_claims",
+            "permitted": true,
+            "summary": "Permitidas según artículo 235 quinto del Capítulo V del CAA"
+          }
+        }
+      },
+      "Brasil": {
+        "country_code": "BR",
+        "last_updated": "2023-12-01",
+        "sections": {
+          
+        }
+      }
+      
+    },
+    "metadata": {
+      "version": "1.0",
+      "last_updated": "2023-12-01",
+      "countries": ["Argentina", "Brasil", "Chile", "Colombia", "Costa Rica", "México", "Perú"],
+      "categories": [
+        "instrumento_legal",
+        "definicion_legal", 
+        "categoria_regulatoria",
+        "proceso_autorizacion",
+        "proceso_registro",
+        "tiempo_aprobacion",
+        "tasas",
+        "etiquetado_general",
+        "frases_advertencia",
+        "propiedades_salud",
+        "propiedades_nutricionales"
+      ]
+    }
+  }
