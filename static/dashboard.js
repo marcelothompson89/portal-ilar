@@ -354,8 +354,7 @@ async function checkDashboardStatus() {
         try {
             if (dashboardUrls[dashboard]) {
                 const response = await fetch(dashboardUrls[dashboard], { 
-                    method: 'HEAD',
-                    mode: 'no-cors'
+                    method: 'GET',
                 });
                 
                 updateDashboardStatus(dashboard, 'online');

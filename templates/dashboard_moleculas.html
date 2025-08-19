@@ -1,1212 +1,428 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Moléculas ILAR</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Moléculas • Portal ILAR</title>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
+  <!-- Estilos globales -->
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    /* Ajustes propios del dashboard (el resto en styles.css) */
+    .filters-card .filter-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .filters-card .filter-group { display:flex; flex-direction:column; gap:.5rem; }
+    .filters-card select, .filters-card input {
+      padding:.75rem; border:2px solid var(--gray-medium); border-radius:10px; font-size:1rem;
+    }
+    .filters-actions { display:flex; gap:.5rem; justify-content:center; margin-top:1rem; }
 
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
+    /* ===== Países visibles (sin dropdown) ===== */
+    .country-multiselect { position: relative; }
+    /* Si no querés mostrar los chips, poné display:none */
+    .selected-countries {
+      background:#e3f2fd; border:2px solid var(--primary-blue);
+      border-radius:10px; padding:.5rem; min-height:42px; margin-bottom:.5rem;
+    }
+    .country-tag { display:inline-block; background:var(--primary-blue); color:#fff; padding:.15rem .5rem; border-radius:999px; font-size:.8rem; margin:.15rem }
 
-        .header h1 {
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+    .country-select-dropdown { display:block !important; border:none; padding:0; }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
+    .country-quick{
+      display:flex; flex-wrap:wrap; gap:1rem; align-items:center;
+      margin:.25rem 0 1rem;
+    }
+    .country-quick .quick-btn{
+      border:1px solid var(--gray-medium); background:#fff;
+      padding:.35rem .6rem; border-radius:10px; cursor:pointer; font-size:.9rem;
+    }
+    .country-quick .quick-btn:disabled{ opacity:.5; cursor:not-allowed }
 
-        .filters {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 15px;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            width: 100%;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
+    .country-options{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap:.5rem 1.25rem;
+    }
+    .country-chip{
+      display:inline-flex; align-items:center; gap:.5rem;
+      background:#f3f4f6; border:1px solid var(--gray-medium);
+      padding:.35rem .6rem; border-radius:10px; font-size:.95rem;
+    }
+    .country-chip input[type="checkbox"]{ transform: translateY(1px); }
 
-        .filter-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 1rem;
-            align-items: start;
-        }
+    /* Tabla */
+    .data-table { width:100%; border-collapse:collapse; font-size:.92rem }
+    .data-table th, .data-table td { padding:.6rem .75rem; border-bottom:1px solid var(--gray-medium); text-align:left }
+    .data-table th { background:#f8f9fa; position:sticky; top:0; z-index:1 }
 
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 100%;
-        }
+    .pagination { display:flex; justify-content:center; align-items:center; gap:.5rem; margin-top:1rem }
+    .pagination button { border:1px solid var(--gray-medium); background:#fff; padding:.5rem .75rem; border-radius:8px; cursor:pointer }
+    .pagination button:disabled { opacity:.5; cursor:not-allowed }
 
-        .filter-group label {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #2c3e50;
-        }
-
-        select, input {
-            padding: 0.75rem;
-            border: 2px solid #e0e6ed;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        select:focus, input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1.5rem;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .tab-btn {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            background: #ecf0f1;
-            color: #2c3e50;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-        }
-
-        .tab-content {
-            display: none;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 2rem;
-        }
-
-        .chart-container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 400px;
-            font-size: 1.1rem;
-            color: #7f8c8d;
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin-right: 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: transform 0.3s ease;
-            margin: 0.25rem;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #95a5a6;
-        }
-
-        /* Tabla de datos */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e0e6ed;
-        }
-
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #2c3e50;
-            position: sticky;
-            top: 0;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        /* Paginación */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .pagination button {
-            padding: 0.5rem 1rem;
-            border: 1px solid #e0e6ed;
-            background: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pagination button:hover:not(:disabled) {
-            background: #667eea;
-            color: white;
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination .current-page {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        /* Multiselect para países */
-        .country-multiselect {
-            position: relative;
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden;
-        }
-
-        .country-select-dropdown {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 2px solid #e0e6ed;
-            border-radius: 8px;
-            background: white;
-            padding: 0.5rem;
-            width: 100%;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        .country-option {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background 0.2s ease;
-            width: 100%;
-            box-sizing: border-box;
-            min-height: 35px;
-            gap: 0.5rem;
-        }
-
-        .country-option:hover {
-            background: #f8f9fa;
-        }
-
-        .country-option input[type="checkbox"] {
-            flex-shrink: 0;
-            margin: 0;
-            width: 16px;
-            height: 16px;
-        }
-
-        .country-option label {
-            flex: 1;
-            cursor: pointer;
-            margin: 0;
-            font-weight: normal;
-            color: #2c3e50;
-            font-size: 0.95rem;
-            line-height: 1.2;
-            padding-left: 0;
-        }
-
-        .selected-countries {
-            background: #e3f2fd;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 0.75rem;
-            min-height: 45px;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            width: 100%;
-            box-sizing: border-box;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-        }
-
-        .country-tag {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 15px;
-            margin: 0.125rem;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .country-tag .remove {
-            margin-left: 0.5rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* Loading Screen */
-        .initial-loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-
-        .loading-logo {
-            font-size: 4rem;
-            margin-bottom: 2rem;
-            animation: pulse 2s infinite;
-        }
-
-        .loading-text {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .loading-progress {
-            width: 300px;
-            height: 4px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-
-        .loading-bar {
-            height: 100%;
-            background: white;
-            width: 0%;
-            border-radius: 2px;
-            animation: loadingBar 3s ease-in-out infinite;
-        }
-
-        .loading-steps {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            text-align: center;
-        }
-
-        @keyframes loadingBar {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border: 1px solid #f5c6cb;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block !important;
-        }
-
-        .info-message {
-            background: #d1ecf1;
-            color: #0c5460;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border: 1px solid #bee5eb;
-        }
-
-        @media (max-width: 768px) {
-            .filter-row {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 1rem;
-            }
-
-            .filter-group {
-                width: 100%;
-            }
-
-            .country-multiselect {
-                width: 100%;
-            }
-
-            .selected-countries {
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .country-select-dropdown {
-                width: 100%;
-                box-sizing: border-box;
-            }
-        }
-    </style>
+    @media (max-width: 900px){ .filters-card .filter-row { grid-template-columns:1fr } }
+  </style>
 </head>
-<body>
-    <!-- Loading Screen -->
-    <div id="initialLoading" class="initial-loading">
-        <div class="loading-logo">
-            <i class="fas fa-flask"></i>
+<body class="dashboard-body">
+  <!-- HEADER -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="logo-section"><i class="fas fa-flask"></i><span>Dashboard de Moléculas</span></div>
+      <div class="user-section">
+        <div class="user-info">
+          <span id="userName" class="user-name">Usuario</span>
+          <span id="userEmail" class="user-email">usuario@ejemplo.com</span>
         </div>
-        <div class="loading-text">
-            Cargando Dashboard de Moléculas ILAR
-        </div>
-        <div class="loading-progress">
-            <div class="loading-bar"></div>
-        </div>
-        <div class="loading-steps" id="loadingSteps">
-            Inicializando sistema...
-        </div>
+        <div id="userAvatar" class="user-avatar">U</div>
+        <button class="logout-btn" onclick="logout()" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
     </div>
+  </header>
 
-    <!-- Header -->
-    <header class="header">
-        <h1>
-            <i class="fas fa-flask"></i>
-            Dashboard de Moléculas ILAR
-        </h1>
-    </header>
+  <!-- MAIN -->
+  <main class="dashboard-main">
 
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Filtros -->
-        <div class="filters">
-            <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">
-                <i class="fas fa-filter"></i> Filtros de Búsqueda
-            </h2>
-            
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="moleculeSelect">Seleccionar Molécula:</label>
-                    <select id="moleculeSelect">
-                        <option value="all">Todas las moléculas</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Seleccionar Países:</label>
-                    <div class="country-multiselect">
-                        <div class="selected-countries" id="selectedCountries">
-                            <span style="color: #666;">Ningún país seleccionado (se mostrarán todos)</span>
-                        </div>
-                        <div class="country-select-dropdown" id="countryDropdown">
-                            <!-- Los países se cargarán aquí dinámicamente -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 1rem;">
-                <button class="btn" onclick="applyFilters()">
-                    <i class="fas fa-search"></i> Aplicar Filtros
-                </button>
-                <button class="btn btn-secondary" onclick="clearFilters()">
-                    <i class="fas fa-times"></i> Limpiar
-                </button>
-            </div>
+    <!-- STATS (opcionales; si querés sólo filtros+tabla, podés borrar esta sección) -->
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon molecules"><i class="fas fa-database"></i></div>
+          <div class="stat-content"><h3 id="totalRecords">-</h3><p>Total de registros</p></div>
         </div>
-
-        <!-- Estadísticas -->
-        <div class="stats" id="statsContainer">
-            <div class="stat-card">
-                <div class="stat-value" id="totalRecords">-</div>
-                <div class="stat-label">Total Registros</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="uniqueCountries">-</div>
-                <div class="stat-label">Países Únicos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="uniqueMolecules">-</div>
-                <div class="stat-label">Moléculas Únicas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="dateRange">-</div>
-                <div class="stat-label">Rango de Años</div>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon countries"><i class="fas fa-globe"></i></div>
+          <div class="stat-content"><h3 id="uniqueCountries">-</h3><p>Países únicos</p></div>
         </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="tab-datos">📋 Datos</button>
-            <button class="tab-btn" data-tab="tab-analisis">📊 Análisis por País</button>
+        <div class="stat-card">
+          <div class="stat-icon ingredients"><i class="fas fa-flask"></i></div>
+          <div class="stat-content"><h3 id="uniqueMolecules">-</h3><p>Moléculas únicas</p></div>
         </div>
-        
-        <!-- Contenido de pestañas -->
-        <div id="tab-datos" class="tab-content active">
-            <h2 style="color:#2c3e50; margin-bottom:1rem;">Datos Filtrados</h2>
-        
-            <!-- Selector de columnas -->
-            <div class="filter-group" style="margin-bottom:1rem;">
-                <label for="columnSelect" style="font-weight:600; color:#2c3e50;">Selecciona columnas a mostrar:</label>
-                <select id="columnSelect" multiple style="height:140px; width:100%; border:2px solid #e0e6ed; border-radius:8px;"></select>
-                <div style="margin-top:.5rem;">
-                    <button class="btn" onclick="applyColumnSelection()">Aplicar columnas</button>
-                    <button class="btn btn-secondary" onclick="resetColumnSelection()">Restablecer</button>
+        <div class="stat-card">
+          <div class="stat-icon regulations"><i class="fas fa-calendar"></i></div>
+          <div class="stat-content"><h3 id="dateRange">-</h3><p>Rango de años</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILTROS -->
+    <section class="dashboards-section">
+      <div class="dashboard-card filters-card">
+        <div class="card-header">
+          <h3 style="color:#fff; font-weight:600">Filtros de búsqueda</h3>
+          <i class="fas fa-filter" style="color:#fff"></i>
+        </div>
+        <div class="card-body" style="padding:1rem 1.5rem">
+          <div class="filter-row">
+            <div class="filter-group">
+              <label for="moleculeSelect"><strong>Molécula</strong></label>
+              <select id="moleculeSelect">
+                <option value="all">Todas las moléculas</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label><strong>Países</strong></label>
+              <div class="country-multiselect">
+                <div class="selected-countries" id="selectedCountries">
+                  <span style="opacity:.7">Ningún país seleccionado (se mostrarán todos)</span>
                 </div>
+                <div class="country-select-dropdown" id="countryDropdown"></div>
+              </div>
+              <!-- Fallback si la API no trae países -->
+              <select id="countriesFallback" multiple style="display:none; height:160px"></select>
             </div>
-        
-            <!-- Contenedor para información y tabla -->
-            <div id="dataInfo"></div>
-            <div style="overflow-x: auto;">
-                <table class="data-table" id="dataTable">
-                    <thead id="tableHead"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
+          </div>
 
-            <!-- Paginación -->
-            <div class="pagination" id="pagination"></div>
+          <div class="filters-actions">
+            <button class="btn-primary" id="btnApply"><i class="fas fa-search"></i>&nbsp;Aplicar filtros</button>
+            <button class="btn-secondary" id="btnClear"><i class="fas fa-eraser"></i>&nbsp;Limpiar</button>
+          </div>
         </div>
-        
-        <div id="tab-analisis" class="tab-content">
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <div id="chart-bar" class="loading">
-                        <div class="spinner"></div>Cargando gráfico...
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <div id="chart-pie" class="loading">
-                        <div class="spinner"></div>Cargando gráfico...
-                    </div>
-                </div>
-            </div>
+      </div>
+    </section>
+
+    <!-- RESULTADOS -->
+    <section>
+      <div class="dashboard-card" style="overflow:hidden">
+        <div class="card-header"><h3 style="color:#fff">Datos filtrados</h3></div>
+        <div class="card-body" style="padding:1rem 1.5rem">
+          <div id="dataInfo" class="info-message" style="display:none"></div>
+          <div style="overflow:auto">
+            <table class="data-table" id="dataTable">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination"></div>
         </div>
-    </div>
+      </div>
+    </section>
+  </main>
 
-    <script>
-        // Variables globales
-        let currentFilters = {
-            molecule: 'all',
-            countries: []
-        };
+  <div id="notification" class="notification" style="display:none"></div>
 
-        let currentData = {
-            data: [],
-            pagination: {
-                total: 0,
-                limit: 50,
-                offset: 0,
-                has_next: false
-            }
-        };
+  <!-- Config / SDK / utilidades -->
+  <script src="/static/config.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/static/dashboard.js"></script>
 
-        let allColumns = [];
-        let selectedColumns = ['Molecule', 'Switch Year', 'Country', 'RX-OTC - Product', 'Strength', 'NFC1'];
-        let availableCountries = [];
+  <script>
+    // ---------- Estado ----------
+    let currentFilters = { molecule: 'all', countries: [] };
+    let pagination = { limit: 50, offset: 0, total: 0 };
+    let availableCountries = [];
 
-        // Función para actualizar el texto de loading
-        function updateLoadingStep(message) {
-            const loadingSteps = document.getElementById('loadingSteps');
-            if (loadingSteps) {
-                loadingSteps.textContent = message;
-            }
-        }
+    // (Opcional) Conjunto UE para el atajo "UE"
+    const EU_SET = new Set([
+      'Austria','Belgium','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark',
+      'Estonia','Finland','France','Germany','Greece','Hungary','Ireland','Italy',
+      'Latvia','Lithuania','Luxembourg','Malta','Netherlands','Poland','Portugal',
+      'Romania','Slovak Republic','Slovenia','Spain','Sweden'
+    ]);
 
-        // Función para ocultar loading screen
-        function hideInitialLoading() {
-            const loadingScreen = document.getElementById('initialLoading');
-            if (loadingScreen) {
-                loadingScreen.classList.add('hidden');
-            }
-        }
+    // ---------- Países (UI) ----------
+    function setCountriesDropdown(list){
+      const box = document.getElementById('countryDropdown');
+      const fallback = document.getElementById('countriesFallback');
+      box.innerHTML = '';
+      fallback.innerHTML = '';
 
-        // Inicializar la aplicación
-        document.addEventListener('DOMContentLoaded', function() {
-            updateLoadingStep('Inicializando interfaz...');
-            initializeTabs();
-            
-            setTimeout(() => {
-                updateLoadingStep('Cargando datos de moléculas...');
-                loadInitialData();
-            }, 500);
+      // DEBUG
+      console.log('availableCountries:', (list && list.length) || 0, list);
+
+      if (!list || list.length === 0) {
+        // Fallback múltiple
+        box.style.display = 'none';
+        fallback.style.display = 'block';
+        (availableCountries || []).forEach(c => {
+          const o = document.createElement('option');
+          o.value = o.textContent = c;
+          fallback.appendChild(o);
         });
+        fallback.onchange = () => {
+          currentFilters.countries = Array.from(fallback.selectedOptions).map(o => o.value);
+          paintSelectedCountries();
+        };
+        return;
+      }
 
-        function initializeTabs() {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
-                });
-            });
-        }
+      // --- Atajos: Todos / Ninguno / UE ---
+      const quick = document.createElement('div');
+      quick.className = 'country-quick';
 
-        async function loadInitialData() {
-            try {
-                updateLoadingStep('Conectando con el servidor...');
-                
-                // Cargar estadísticas iniciales y opciones de filtro
-                const response = await fetch('/api/moleculas/stats');
-                if (!response.ok) {
-                    throw new Error(`Error del servidor: ${response.status}`);
-                }
-                
-                updateLoadingStep('Procesando datos...');
-                const data = await response.json();
-                
-                // Poblar selectores
-                updateLoadingStep('Configurando filtros...');
-                populateSelectors(data);
-                
-                // Cargar estadísticas
-                updateStats(data);
-                
-                // Cargar datos iniciales
-                updateLoadingStep('Cargando tabla de datos...');
-                await loadTableData();
-                
-                // Cargar gráficos iniciales
-                updateLoadingStep('Generando gráficos...');
-                await loadCharts();
-                
-                updateLoadingStep('¡Listo!');
-                
-                // Ocultar loading después de un pequeño delay
-                setTimeout(() => {
-                    hideInitialLoading();
-                }, 500);
-                
-            } catch (error) {
-                console.error('Error cargando datos iniciales:', error);
-                updateLoadingStep('Error cargando datos');
-                showError('Error cargando los datos. Por favor, recarga la página.');
-                
-                // Ocultar loading incluso si hay error
-                setTimeout(() => {
-                    hideInitialLoading();
-                }, 2000);
-            }
-        }
+      const lbl = document.createElement('span');
+      lbl.textContent = 'Países:';
 
-        function populateSelectors(data) {
-            // Poblar selector de moléculas
-            const moleculeSelect = document.getElementById('moleculeSelect');
-            moleculeSelect.innerHTML = '<option value="all">Todas las moléculas</option>';
-            
-            if (data.available_molecules && data.available_molecules.length > 0) {
-                data.available_molecules.forEach(molecule => {
-                    const option = document.createElement('option');
-                    option.value = molecule;
-                    option.textContent = molecule;
-                    moleculeSelect.appendChild(option);
-                });
-            }
+      const btnAll = document.createElement('button');
+      btnAll.className = 'quick-btn'; btnAll.type = 'button';
+      btnAll.textContent = 'Todos';
+      btnAll.onclick = () => {
+        currentFilters.countries = [...list];
+        box.querySelectorAll('input[type="checkbox"]').forEach(ch => ch.checked = true);
+        paintSelectedCountries();
+      };
 
-            // Guardar países disponibles y crear el selector
-            availableCountries = data.available_countries || [];
-            createCountryMultiSelect();
-        }
+      const btnNone = document.createElement('button');
+      btnNone.className = 'quick-btn'; btnNone.type = 'button';
+      btnNone.textContent = 'Ninguno';
+      btnNone.onclick = () => {
+        currentFilters.countries = [];
+        box.querySelectorAll('input[type="checkbox"]').forEach(ch => ch.checked = false);
+        paintSelectedCountries();
+      };
 
-        function createCountryMultiSelect() {
-            const dropdown = document.getElementById('countryDropdown');
-            dropdown.innerHTML = '';
-            
-            if (availableCountries.length === 0) {
-                dropdown.innerHTML = '<div class="country-option" style="font-style: italic; color: #888;">No hay países disponibles</div>';
-                return;
-            }
-            
-            availableCountries.forEach(country => {
-                const option = document.createElement('div');
-                option.className = 'country-option';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `country_${country.replace(/\s+/g, '_')}`;
-                checkbox.value = country;
-                checkbox.onchange = updateSelectedCountries;
-                
-                const label = document.createElement('label');
-                label.htmlFor = checkbox.id;
-                label.textContent = country;
-                label.style.display = 'block';
-                label.style.width = '100%';
-                
-                option.appendChild(checkbox);
-                option.appendChild(label);
-                dropdown.appendChild(option);
-            });
-            
-            console.log('Países cargados:', availableCountries.length);
-        }
-
-        function updateSelectedCountries() {
-            const checkboxes = document.querySelectorAll('#countryDropdown input[type="checkbox"]');
-            const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
-            
-            const container = document.getElementById('selectedCountries');
-            
-            if (selected.length === 0) {
-                container.innerHTML = '<span style="color: #666;">Ningún país seleccionado (se mostrarán todos)</span>';
-            } else {
-                container.innerHTML = selected.map(country => 
-                    `<span class="country-tag">${country}<span class="remove" onclick="removeCountry('${country}')">&times;</span></span>`
-                ).join('');
-            }
-            
-            currentFilters.countries = selected;
-        }
-
-        function removeCountry(country) {
-            const checkbox = document.getElementById(`country_${country.replace(/\s+/g, '_')}`);
-            if (checkbox) {
-                checkbox.checked = false;
-                updateSelectedCountries();
-            }
-        }
-
-        function updateStats(data) {
-            document.getElementById('totalRecords').textContent = data.total_records?.toLocaleString() || '-';
-            document.getElementById('uniqueCountries').textContent = data.unique_countries || '-';
-            document.getElementById('uniqueMolecules').textContent = data.unique_molecules || '-';
-            
-            const dateRange = data.date_range;
-            if (dateRange && dateRange.min_year && dateRange.max_year) {
-                document.getElementById('dateRange').textContent = `${dateRange.min_year} - ${dateRange.max_year}`;
-            } else {
-                document.getElementById('dateRange').textContent = 'N/A';
-            }
-        }
-
-        async function loadTableData(offset = 0) {
-            try {
-                // Construir parámetros de la URL
-                const params = new URLSearchParams();
-                
-                if (currentFilters.molecule !== 'all') {
-                    params.append('molecule', currentFilters.molecule);
-                }
-                
-                currentFilters.countries.forEach(country => {
-                    params.append('countries', country);
-                });
-
-                params.append('limit', currentData.pagination.limit);
-                params.append('offset', offset);
-
-                // Llamar a la API de datos
-                const response = await fetch(`/api/moleculas/data?${params}`);
-                if (!response.ok) {
-                    throw new Error(`Error del servidor: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                currentData = result;
-
-                // Actualizar columnas disponibles
-                if (result.data && result.data.length > 0) {
-                    allColumns = Object.keys(result.data[0]);
-                    updateColumnSelector();
-                }
-
-                // Renderizar tabla
-                renderTable();
-                renderPagination();
-
-            } catch (error) {
-                console.error('Error cargando datos de tabla:', error);
-                showError('Error cargando los datos de la tabla.');
-            }
-        }
-
-        function updateColumnSelector() {
-            const select = document.getElementById('columnSelect');
-            select.innerHTML = '';
-            
-            allColumns.forEach(col => {
-                const opt = document.createElement('option');
-                opt.value = col;
-                opt.textContent = col;
-                if (selectedColumns.includes(col)) {
-                    opt.selected = true;
-                }
-                select.appendChild(opt);
-            });
-        }
-
-        function applyColumnSelection() {
-            const select = document.getElementById('columnSelect');
-            selectedColumns = Array.from(select.selectedOptions).map(o => o.value);
-            renderTable();
-        }
-
-        function resetColumnSelection() {
-            selectedColumns = ['Molecule', 'Switch Year', 'Country', 'RX-OTC - Product', 'Strength', 'NFC1']
-                .filter(col => allColumns.includes(col));
-            updateColumnSelector();
-            renderTable();
-        }
-
-        function renderTable() {
-            const tableHead = document.getElementById('tableHead');
-            const tableBody = document.getElementById('tableBody');
-            const dataInfo = document.getElementById('dataInfo');
-
-            if (!currentData.data || currentData.data.length === 0) {
-                dataInfo.innerHTML = '<div class="info-message">No hay datos para mostrar con los filtros actuales.</div>';
-                tableHead.innerHTML = '';
-                tableBody.innerHTML = '';
-                return;
-            }
-
-            if (selectedColumns.length === 0) {
-                dataInfo.innerHTML = '<div class="error-message show">Selecciona al menos una columna para mostrar.</div>';
-                tableHead.innerHTML = '';
-                tableBody.innerHTML = '';
-                return;
-            }
-
-            // Información de registros
-            const { total, offset, limit } = currentData.pagination;
-            const startRecord = offset + 1;
-            const endRecord = Math.min(offset + currentData.data.length, total);
-            
-            dataInfo.innerHTML = `
-                <div class="info-message">
-                    <i class="fas fa-info-circle"></i>
-                    Mostrando registros ${startRecord} - ${endRecord} de ${total.toLocaleString()} total
-                </div>
-            `;
-
-            // Crear encabezados
-            tableHead.innerHTML = `
-                <tr>
-                    ${selectedColumns.map(col => `<th>${col}</th>`).join('')}
-                </tr>
-            `;
-
-            // Crear filas de datos
-            tableBody.innerHTML = currentData.data.map(row => {
-                return `
-                    <tr>
-                        ${selectedColumns.map(col => {
-                            let value = row[col];
-                            if (value === null || value === undefined) {
-                                value = '-';
-                            }
-                            return `<td>${value}</td>`;
-                        }).join('')}
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderPagination() {
-            const pagination = document.getElementById('pagination');
-            const { total, offset, limit, has_next } = currentData.pagination;
-            
-            if (total <= limit) {
-                pagination.style.display = 'none';
-                return;
-            }
-
-            pagination.style.display = 'flex';
-            
-            const currentPage = Math.floor(offset / limit) + 1;
-            const totalPages = Math.ceil(total / limit);
-            const hasPrev = offset > 0;
-
-            pagination.innerHTML = `
-                <button onclick="goToPage(0)" ${!hasPrev ? 'disabled' : ''}>
-                    <i class="fas fa-angle-double-left"></i> Primera
-                </button>
-                <button onclick="goToPage(${offset - limit})" ${!hasPrev ? 'disabled' : ''}>
-                    <i class="fas fa-angle-left"></i> Anterior
-                </button>
-                <span class="current-page">Página ${currentPage} de ${totalPages}</span>
-                <button onclick="goToPage(${offset + limit})" ${!has_next ? 'disabled' : ''}>
-                    Siguiente <i class="fas fa-angle-right"></i>
-                </button>
-                <button onclick="goToPage(${(totalPages - 1) * limit})" ${!has_next ? 'disabled' : ''}>
-                    Última <i class="fas fa-angle-double-right"></i>
-                </button>
-            `;
-        }
-
-        async function goToPage(newOffset) {
-            await loadTableData(newOffset);
-        }
-
-        async function loadCharts() {
-            try {
-                // Construir parámetros de la URL
-                const params = new URLSearchParams();
-                
-                if (currentFilters.molecule !== 'all') {
-                    params.append('molecule', currentFilters.molecule);
-                }
-                
-                currentFilters.countries.forEach(country => {
-                    params.append('countries', country);
-                });
-
-                // Llamar a la API de gráficos
-                const response = await fetch(`/api/moleculas/charts?${params}`);
-                if (!response.ok) {
-                    throw new Error(`Error del servidor: ${response.status}`);
-                }
-                
-                const charts = await response.json();
-
-                // Renderizar gráfico de barras
-                if (charts.molecules_by_country) {
-                    Plotly.newPlot('chart-bar', charts.molecules_by_country.data, charts.molecules_by_country.layout, {responsive: true});
-                } else {
-                    document.getElementById('chart-bar').innerHTML = 
-                        '<div style="text-align:center; color:#7f8c8d; padding:2rem;">Sin datos para el gráfico de barras</div>';
-                }
-
-                // Renderizar gráfico de pie
-                if (charts.rx_otc_distribution) {
-                    Plotly.newPlot('chart-pie', charts.rx_otc_distribution.data, charts.rx_otc_distribution.layout, {responsive: true});
-                } else {
-                    document.getElementById('chart-pie').innerHTML = 
-                        '<div style="text-align:center; color:#7f8c8d; padding:2rem;">Sin datos para el gráfico de pie</div>';
-                }
-
-            } catch (error) {
-                console.error('Error cargando gráficos:', error);
-                document.getElementById('chart-bar').innerHTML = 
-                    '<div style="text-align:center; color:#e74c3c; padding:2rem;"><i class="fas fa-exclamation-triangle"></i> Error cargando gráfico</div>';
-                document.getElementById('chart-pie').innerHTML = 
-                    '<div style="text-align:center; color:#e74c3c; padding:2rem;"><i class="fas fa-exclamation-triangle"></i> Error cargando gráfico</div>';
-            }
-        }
-
-        async function applyFilters() {
-            try {
-                showLoading('Aplicando filtros...');
-                
-                // Obtener valor del selector de moléculas
-                const moleculeSelect = document.getElementById('moleculeSelect');
-                currentFilters.molecule = moleculeSelect.value;
-                
-                // Los países ya están actualizados en currentFilters.countries
-
-                // Recargar estadísticas con filtros
-                const params = new URLSearchParams();
-                if (currentFilters.molecule !== 'all') {
-                    params.append('molecule', currentFilters.molecule);
-                }
-                currentFilters.countries.forEach(country => {
-                    params.append('countries', country);
-                });
-
-                const statsResponse = await fetch(`/api/moleculas/stats?${params}`);
-                if (!statsResponse.ok) {
-                    throw new Error(`Error del servidor: ${statsResponse.status}`);
-                }
-                
-                const statsData = await statsResponse.json();
-                updateStats(statsData);
-
-                // Recargar datos de tabla (resetear a primera página)
-                await loadTableData(0);
-
-                // Recargar gráficos
-                await loadCharts();
-                
-                hideLoading();
-                showSuccess('Filtros aplicados correctamente');
-
-            } catch (error) {
-                console.error('Error aplicando filtros:', error);
-                showError('Error aplicando los filtros.');
-                hideLoading();
-            }
-        }
-
-        function clearFilters() {
-            // Limpiar selector de moléculas
-            document.getElementById('moleculeSelect').value = 'all';
-            
-            // Limpiar países seleccionados
-            const checkboxes = document.querySelectorAll('#countryDropdown input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
-            updateSelectedCountries();
-            
-            // Resetear filtros
-            currentFilters = {
-                molecule: 'all',
-                countries: []
-            };
-
-            // Recargar datos
-            loadInitialData();
-        }
-
-        function showLoading(message = 'Cargando...') {
-            // Mostrar indicadores de carga en gráficos
-            const chartIds = ['chart-bar', 'chart-pie'];
-            chartIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.innerHTML = `
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            ${message}
-                        </div>
-                    `;
-                }
-            });
-        }
-
-        function hideLoading() {
-            // Los gráficos se actualizarán cuando se carguen los datos
-        }
-
-        function showError(message) {
-            showNotification(message, 'error');
-        }
-
-        function showSuccess(message) {
-            showNotification(message, 'success');
-        }
-
-        function showNotification(message, type = 'info') {
-            // Verificar que el mensaje no sea undefined o un objeto
-            if (!message || typeof message !== 'string') {
-                console.error('Error: mensaje de notificación inválido:', message);
-                return;
-            }
-            
-            // Crear notificación
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 1rem 2rem;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 2000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                animation: slideIn 0.3s ease;
-                max-width: 400px;
-            `;
-            
-            switch (type) {
-                case 'error':
-                    notification.style.background = '#e74c3c';
-                    break;
-                case 'success':
-                    notification.style.background = '#27ae60';
-                    break;
-                default:
-                    notification.style.background = '#3498db';
-            }
-            
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: none;
-                        border: none;
-                        color: white;
-                        margin-left: auto;
-                        cursor: pointer;
-                        font-size: 1.2rem;
-                        padding: 0 0.5rem;
-                    ">&times;</button>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-remove después de 5 segundos
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.style.animation = 'slideOut 0.3s ease';
-                    setTimeout(() => notification.remove(), 300);
-                }
-            }, 5000);
-        }
-
-        // Hacer los gráficos responsivos al cambio de tamaño de ventana
-        window.addEventListener('resize', function() {
-            const chartIds = ['chart-bar', 'chart-pie'];
-            chartIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element && element.data) {
-                    Plotly.Plots.resize(id);
-                }
-            });
+      const btnEU = document.createElement('button');
+      btnEU.className = 'quick-btn'; btnEU.type = 'button';
+      btnEU.textContent = 'UE';
+      btnEU.onclick = () => {
+        const eu = list.filter(c => EU_SET.has(c));
+        currentFilters.countries = eu;
+        box.querySelectorAll('input[type="checkbox"]').forEach(ch => {
+          ch.checked = EU_SET.has(ch.value);
         });
+        paintSelectedCountries();
+      };
 
-        // Agregar estilos para animaciones
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            @keyframes slideOut {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
+      quick.append(lbl, btnAll, btnNone, btnEU);
+
+      // --- Grilla visible de países ---
+      const grid = document.createElement('div');
+      grid.className = 'country-options';
+
+      list.forEach(c => {
+        const id = `c_${c.replace(/\W/g,'_')}`;
+        const chip = document.createElement('label');
+        chip.className = 'country-chip';
+        chip.setAttribute('for', id);
+        chip.innerHTML = `
+          <input type="checkbox" id="${id}" value="${c}">
+          <span>${c}</span>
         `;
-        document.head.appendChild(style);
-    </script>
+        const input = chip.querySelector('input');
+        input.addEventListener('change', () => {
+          if (input.checked) {
+            if (!currentFilters.countries.includes(c)) currentFilters.countries.push(c);
+          } else {
+            currentFilters.countries = currentFilters.countries.filter(x => x !== c);
+          }
+          paintSelectedCountries();
+        });
+
+        // Mantener selección previa
+        if (currentFilters.countries.includes(c)) input.checked = true;
+
+        grid.appendChild(chip);
+      });
+
+      // Pintar en el contenedor
+      box.style.display = 'block';
+      box.appendChild(quick);
+      box.appendChild(grid);
+    }
+
+    function onCountriesChange(){
+      // Ya no se usa con la grilla, pero lo dejamos por compatibilidad
+      const checks = Array.from(document.querySelectorAll('#countryDropdown input[type="checkbox"]:checked'));
+      currentFilters.countries = checks.map(x => x.value);
+      paintSelectedCountries();
+    }
+
+    function paintSelectedCountries(){
+      const wrap = document.getElementById('selectedCountries');
+      wrap.innerHTML = '';
+      if(!currentFilters.countries.length){
+        wrap.innerHTML = '<span style="opacity:.7">Ningún país seleccionado (se mostrarán todos)</span>';
+        return;
+      }
+      currentFilters.countries.forEach(c => {
+        const tag = document.createElement('span');
+        tag.className = 'country-tag';
+        tag.innerHTML = `${c} <span class="remove" title="Quitar" aria-label="Quitar">×</span>`;
+        tag.querySelector('.remove').addEventListener('click', ()=>{
+          const cb = document.querySelector(`#countryDropdown input[value="${CSS.escape(c)}"]`);
+          if(cb){ cb.checked = false; }
+          const fallback = document.getElementById('countriesFallback');
+          Array.from(fallback.options).forEach(o => { if(o.value===c) o.selected=false; });
+          currentFilters.countries = currentFilters.countries.filter(x => x !== c);
+          paintSelectedCountries();
+        });
+        wrap.appendChild(tag);
+      });
+    }
+
+    // ---------- Paginación ----------
+    function setPagination(){
+      const holder = document.getElementById('pagination');
+      holder.innerHTML = '';
+      const prev = document.createElement('button');
+      prev.textContent = 'Anterior';
+      prev.disabled = pagination.offset === 0;
+      prev.onclick = ()=>{ pagination.offset = Math.max(0, pagination.offset - pagination.limit); loadTable(); };
+
+      const info = document.createElement('span');
+      const page = Math.floor(pagination.offset / pagination.limit) + 1;
+      const pages = Math.max(1, Math.ceil(pagination.total / pagination.limit));
+      info.textContent = `Página ${page} / ${pages}`;
+
+      const next = document.createElement('button');
+      next.textContent = 'Siguiente';
+      next.disabled = pagination.offset + pagination.limit >= pagination.total;
+      next.onclick = ()=>{ pagination.offset += pagination.limit; loadTable(); };
+
+      holder.append(prev, info, next);
+    }
+
+    // ---------- Botones ----------
+    function setButtons(){
+      document.getElementById('btnApply').addEventListener('click', ()=>{ pagination.offset = 0; refreshAll(); });
+      document.getElementById('btnClear').addEventListener('click', ()=>{
+        document.getElementById('moleculeSelect').value = 'all';
+        currentFilters = { molecule: 'all', countries: [] };
+        document.querySelectorAll('#countryDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+        const fallback = document.getElementById('countriesFallback');
+        Array.from(fallback.options).forEach(o => o.selected=false);
+        paintSelectedCountries();
+        pagination.offset = 0;
+        refreshAll();
+      });
+    }
+
+    // ---------- API ----------
+    async function loadStats(){
+      const params = new URLSearchParams();
+      if(currentFilters.molecule !== 'all') params.append('molecule', currentFilters.molecule);
+      currentFilters.countries.forEach(c => params.append('countries', c));
+
+      const res = await fetch(`/api/moleculas/stats?${params.toString()}`);
+      if(!res.ok) throw new Error('No se pudieron cargar las estadísticas');
+      const data = await res.json();
+
+      // Stats
+      const tr = document.getElementById('totalRecords');
+      const uc = document.getElementById('uniqueCountries');
+      const um = document.getElementById('uniqueMolecules');
+      const dr = document.getElementById('dateRange');
+      if (tr) tr.textContent = (data.total_records ?? 0).toLocaleString();
+      if (uc) uc.textContent = data.unique_countries ?? '-';
+      if (um) um.textContent = data.unique_molecules ?? '-';
+      if (dr) {
+        const r = data.date_range || {};
+        dr.textContent = (r.min_year && r.max_year) ? `${r.min_year} – ${r.max_year}` : '-';
+      }
+
+      // Selects
+      const molSel = document.getElementById('moleculeSelect');
+      if (molSel && molSel.options.length <= 1) {
+        (data.available_molecules || []).forEach(m => {
+          const o=document.createElement('option'); o.value=o.textContent=m; molSel.appendChild(o);
+        });
+      }
+      availableCountries = data.available_countries || [];
+      setCountriesDropdown(availableCountries);
+    }
+
+    async function loadTable(){
+      const head = document.getElementById('tableHead');
+      const body = document.getElementById('tableBody');
+      const info = document.getElementById('dataInfo');
+      if (!head || !body) return;
+
+      const params = new URLSearchParams();
+      if(currentFilters.molecule !== 'all') params.append('molecule', currentFilters.molecule);
+      currentFilters.countries.forEach(c => params.append('countries', c));
+      params.append('limit', pagination.limit);
+      params.append('offset', pagination.offset);
+
+      const res = await fetch(`/api/moleculas/data?${params.toString()}`);
+      if(!res.ok) throw new Error('No se pudieron cargar los datos');
+      const { data, pagination: pg } = await res.json();
+      pagination = pg;
+
+      head.innerHTML = body.innerHTML = '';
+      if(!data || !data.length){
+        if (info){ info.style.display='block'; info.textContent='No hay datos para los filtros aplicados.'; }
+        setPagination();
+        return;
+      }
+      if (info) info.style.display='none';
+
+      const cols = Object.keys(data[0]);
+      head.innerHTML = `<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+      body.innerHTML = data.map(row => `<tr>${cols.map(c => `<td>${row[c] ?? ''}</td>`).join('')}</tr>`).join('');
+      setPagination();
+    }
+
+    async function refreshAll(){
+      await loadStats();
+      await loadTable();
+    }
+
+    // ---------- Inicio ----------
+    document.addEventListener('DOMContentLoaded', async () => {
+      setButtons();
+      paintSelectedCountries();
+      document.getElementById('moleculeSelect').addEventListener('change', (e)=>{ currentFilters.molecule = e.target.value; });
+      try { await refreshAll(); } catch (e){ console.error(e); }
+    });
+  </script>
 </body>
 </html>
