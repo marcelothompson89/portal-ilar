@@ -6,7 +6,7 @@ Solución optimizada para producción en Render
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Optional
 import pandas as pd
@@ -36,9 +36,18 @@ async def load_data_on_startup():
     logger.info("🔄 Cargando datos en memoria...")
     
     try:
+        # Verificar si el archivo existe
+        excel_file = 'Version final Extracto base de datos Mar 2023.xlsx'
+        if not os.path.exists(excel_file):
+            logger.warning(f"❌ Archivo {excel_file} no encontrado")
+            data_cache['moleculas'] = pd.DataFrame()
+            return
+            
+        logger.info(f"📂 Cargando archivo: {excel_file}")
+        
         # Cargar datos de moléculas
         df_moleculas = pd.read_excel(
-            'Version final Extracto base de datos Mar 2023.xlsx', 
+            excel_file, 
             sheet_name='Base en inglés'
         )
         
@@ -112,8 +121,25 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # RUTAS PRINCIPALES
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Página de inicio - redirige a login"""
-    return templates.TemplateResponse("login.html", {"request": request})
+    """Página de inicio - servir página de carga o redirigir a login"""
+    # Si existe el archivo de carga temporal, servirlo
+    if os.path.exists('loading_temp.html'):
+        with open('loading_temp.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    else:
+        # Si no, redirigir a login
+        return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/loading", response_class=HTMLResponse)
+async def loading_page(request: Request):
+    """Página de carga standalone"""
+    if os.path.exists('loading_temp.html'):
+        with open('loading_temp.html', 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    else:
+        return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/login.html", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -177,7 +203,7 @@ async def get_moleculas_stats(
 async def get_moleculas_data(
     molecule: Optional[str] = Query(None),
     countries: Optional[List[str]] = Query(None),
-    limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
+    limit: int = Query(50, ge=1, le=1000, description="Número máximo de registros"),
     offset: int = Query(0, ge=0, description="Offset para paginación")
 ):
     """Obtener datos de moléculas con paginación (JSON-safe: sin NaN/Inf/NaT)"""
@@ -189,15 +215,16 @@ async def get_moleculas_data(
     filtered_df = df.copy()
     if molecule and molecule != "all":
         filtered_df = filtered_df[filtered_df['Molecule'] == molecule]
-    if countries:
+    if countries and len(countries) > 0:
         filtered_df = filtered_df[filtered_df['Country'].isin(countries)]
 
-    # Paginación
+    # Total de registros filtrados
     total_records = len(filtered_df)
+    
+    # Paginación
     paginated_df = filtered_df.iloc[offset:offset + limit].copy()
 
     # --- Fechas → string ISO ---
-    from pandas.api.types import is_datetime64_any_dtype, is_datetime64tz_dtype
     for c in paginated_df.columns:
         col = paginated_df[c]
         if is_datetime64_any_dtype(col) or is_datetime64tz_dtype(col):
@@ -220,9 +247,6 @@ async def get_moleculas_data(
     # Encoder de FastAPI que convierte tipos numpy/pandas a JSON válido
     return JSONResponse(content=jsonable_encoder(payload))
 
-
-
-
 @app.get("/api/moleculas/charts")
 async def get_moleculas_charts(
     molecule: Optional[str] = Query(None),
@@ -238,14 +262,14 @@ async def get_moleculas_charts(
     filtered_df = df.copy()
     if molecule and molecule != "all":
         filtered_df = filtered_df[filtered_df['Molecule'] == molecule]
-    if countries:
+    if countries and len(countries) > 0:
         filtered_df = filtered_df[filtered_df['Country'].isin(countries)]
     
     charts = {}
     
     try:
         # Gráfico 1: Moléculas únicas por país (top 15)
-        if {'Country', 'Molecule'}.issubset(filtered_df.columns):
+        if {'Country', 'Molecule'}.issubset(filtered_df.columns) and not filtered_df.empty:
             country_molecules = (
                 filtered_df.groupby('Country')['Molecule']
                 .nunique()
@@ -265,49 +289,60 @@ async def get_moleculas_charts(
                     xaxis_tickangle=-45, 
                     height=400,
                     showlegend=False,
-                    margin=dict(l=40, r=40, t=40, b=100)
+                    margin=dict(l=40, r=40, t=60, b=100),
+                    xaxis_title="País",
+                    yaxis_title="Número de moléculas"
                 )
                 charts['molecules_by_country'] = json.loads(json.dumps(fig_bar, cls=plotly.utils.PlotlyJSONEncoder))
         
         # Gráfico 2: Distribución RX vs OTC
-        if 'RX-OTC - Molecule' in filtered_df.columns:
+        if 'RX-OTC - Molecule' in filtered_df.columns and not filtered_df.empty:
             rx_series = filtered_df['RX-OTC - Molecule'].astype(str).str.strip()
-            rx_series = rx_series.replace({'': None, 'nan': None, 'None': None})
+            rx_series = rx_series.replace({'': None, 'nan': None, 'None': None, 'NaN': None})
             rx_otc_counts = rx_series.dropna().value_counts()
             if not rx_otc_counts.empty:
                 fig_pie = px.pie(
                     values=rx_otc_counts.values,
                     names=rx_otc_counts.index,
-                    title="Distribución por tipo de regulación"
+                    title="Distribución por tipo de regulación (RX-OTC)"
                 )
-                fig_pie.update_layout(height=400)
+                fig_pie.update_layout(
+                    height=400,
+                    margin=dict(l=40, r=40, t=60, b=40)
+                )
                 charts['rx_otc_distribution'] = json.loads(json.dumps(fig_pie, cls=plotly.utils.PlotlyJSONEncoder))
         
-        # Gráfico 3: Timeline de switches
-        if 'Switch Year' in filtered_df.columns:
+        # Gráfico 3: Timeline de switches (si hay datos de años válidos)
+        if 'Switch Year' in filtered_df.columns and not filtered_df.empty:
             yr = pd.to_numeric(filtered_df['Switch Year'], errors='coerce')
-            yr_mask = yr.between(1991, 2025, inclusive='both')
+            yr_mask = yr.between(1990, 2030, inclusive='both')
             year_data = filtered_df.loc[yr_mask].copy()
-            year_data['Switch Year'] = yr.loc[yr_mask]
-
+            
             if not year_data.empty:
+                year_data['Switch Year'] = yr.loc[yr_mask]
                 year_counts = (year_data
                                .groupby('Switch Year', dropna=True)
                                .size()
                                .reset_index(name='count')
                                .sort_values('Switch Year'))
-                fig_timeline = px.line(
-                    year_counts, 
-                    x='Switch Year', 
-                    y='count',
-                    title="Evolución de switches por año",
-                    markers=True
-                )
-                fig_timeline.update_layout(height=400)
-                charts['switches_timeline'] = json.loads(json.dumps(fig_timeline, cls=plotly.utils.PlotlyJSONEncoder))
+                
+                if not year_counts.empty:
+                    fig_timeline = px.line(
+                        year_counts, 
+                        x='Switch Year', 
+                        y='count',
+                        title="Evolución de switches por año",
+                        markers=True
+                    )
+                    fig_timeline.update_layout(
+                        height=400,
+                        xaxis_title="Año",
+                        yaxis_title="Número de switches"
+                    )
+                    charts['switches_timeline'] = json.loads(json.dumps(fig_timeline, cls=plotly.utils.PlotlyJSONEncoder))
         
         # Gráfico 4: Top moléculas
-        if 'Molecule' in filtered_df.columns and len(filtered_df) > 0:
+        if 'Molecule' in filtered_df.columns and not filtered_df.empty:
             top_molecules = filtered_df['Molecule'].value_counts().head(10)
             if not top_molecules.empty:
                 fig_top = px.bar(
@@ -317,7 +352,11 @@ async def get_moleculas_charts(
                     title="Top 10 moléculas más frecuentes",
                     labels={'x': 'Número de registros', 'y': 'Molécula'}
                 )
-                fig_top.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
+                fig_top.update_layout(
+                    height=400, 
+                    yaxis={'categoryorder': 'total ascending'},
+                    margin=dict(l=150, r=40, t=60, b=40)
+                )
                 charts['top_molecules'] = json.loads(json.dumps(fig_top, cls=plotly.utils.PlotlyJSONEncoder))
         
     except Exception as e:
